@@ -135,6 +135,15 @@ function kindLabel(kind) {
   return { joueur: 'Joueur', coach: 'Coach', club: 'Club / Équipe' }[kind] || kind;
 }
 
+// Extrait l'identifiant d'une vidéo YouTube depuis les formats d'URL courants.
+function youtubeId(url) {
+  if (!url) return null;
+  const m = String(url).match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  return m ? m[1] : null;
+}
+
 function ageFrom(dateNaissance) {
   if (!dateNaissance) return null;
   const b = new Date(dateNaissance);

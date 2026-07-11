@@ -46,11 +46,21 @@
   if (profile) {
     ['title', 'displayName', 'ville', 'dateNaissance', 'taille', 'poids', 'qualites',
      'axeProgression', 'cvSportif', 'palmares', 'statsSaisonPassee', 'projetRecherche',
-     'projetPro', 'attentes', 'espaceLibre', 'nomClub', 'projetSportif', 'projetHumain']
+     'projetPro', 'attentes', 'espaceLibre', 'nomClub', 'projetSportif', 'projetHumain',
+     'videoUrl']
       .forEach((k) => setVal(k, profile[k]));
     setVal('description', isClub ? '' : profile.description);
     setVal('descriptionClub', isClub ? profile.description : '');
     document.getElementById('photo').value = profile.photo || '';
+    // CV PDF déjà en ligne
+    const setDoc = (hiddenId, statusId, url, label) => {
+      if (!url) return;
+      document.getElementById(hiddenId).value = url;
+      document.getElementById(statusId).innerHTML =
+        `<a href="${escapeHtml(url)}" target="_blank">${label} actuel</a>`;
+    };
+    setDoc('cvSportifFile', 'cvSportifStatus', profile.cvSportifFile, 'CV sportif');
+    setDoc('cvProFile', 'cvProStatus', profile.cvProFile, 'CV professionnel');
     document.getElementById('published').checked = profile.published !== false;
     if (profile.photo) document.getElementById('photoStatus').innerHTML =
       `<a href="${escapeHtml(profile.photo)}" target="_blank">Photo actuelle</a>`;
@@ -72,6 +82,27 @@
       status.innerHTML = `<a href="${escapeHtml(data.url)}" target="_blank">Photo envoyée ✓</a>`;
     } catch (err) { status.textContent = err.message; }
   });
+
+  // Upload de PDF (CV sportif / CV pro) — réutilisable
+  function setupDocUpload(inputId, hiddenId, statusId, label) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener('change', async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const status = document.getElementById(statusId);
+      status.textContent = 'Envoi en cours…';
+      try {
+        const fd = new FormData(); fd.append('doc', file);
+        const res = await fetch('/api/upload-doc', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Échec de l'envoi");
+        document.getElementById(hiddenId).value = data.url;
+        status.innerHTML = `<a href="${escapeHtml(data.url)}" target="_blank">${label} envoyé ✓</a>`;
+      } catch (err) { status.textContent = err.message; }
+    });
+  }
+  setupDocUpload('cvSportifFileInput', 'cvSportifFile', 'cvSportifStatus', 'CV sportif');
+  setupDocUpload('cvProFileInput', 'cvProFile', 'cvProStatus', 'CV professionnel');
 
   // Enregistrement
   document.getElementById('form').addEventListener('submit', async (e) => {
@@ -117,6 +148,9 @@
         qualites: g('qualites'),
         axeProgression: g('axeProgression'),
         cvSportif: g('cvSportif'),
+        cvSportifFile: g('cvSportifFile'),
+        cvProFile: g('cvProFile'),
+        videoUrl: g('videoUrl'),
         palmares: g('palmares'),
         statsSaisonPassee: g('statsSaisonPassee'),
         projetRecherche: g('projetRecherche'),

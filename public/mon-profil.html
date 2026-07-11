@@ -100,6 +100,27 @@
         </fieldset>
 
         <fieldset>
+          <legend>Documents &amp; vidéo</legend>
+          <div class="row">
+            <div>
+              <label>CV sportif (PDF)</label>
+              <input type="file" id="cvSportifFileInput" accept="application/pdf" />
+              <div class="hint" id="cvSportifStatus"></div>
+              <input type="hidden" id="cvSportifFile" />
+            </div>
+            <div>
+              <label>CV professionnel (PDF)</label>
+              <input type="file" id="cvProFileInput" accept="application/pdf" />
+              <div class="hint" id="cvProStatus"></div>
+              <input type="hidden" id="cvProFile" />
+            </div>
+          </div>
+          <label for="videoUrl">Lien vidéo « highlights » (YouTube)</label>
+          <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=…" />
+          <div class="hint">La vidéo sera visionnable directement sur ta page.</div>
+        </fieldset>
+
+        <fieldset>
           <legend>Mon projet</legend>
           <label for="projetRecherche">Projet sportif recherché</label>
           <textarea id="projetRecherche"></textarea>

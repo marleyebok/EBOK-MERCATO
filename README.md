@@ -28,6 +28,8 @@ Pour changer le port : `PORT=8080 npm start`.
 - **Création d'une annonce** riche :
   - Joueur / coach : slogan, photo, CV sportif, palmarès, stats saison dernière, poste, taille/poids,
     qualités, axes de progression, projet recherché, projet pro/études, attentes, espace libre, etc.
+    Possibilité de joindre un **CV sportif (PDF)**, un **CV professionnel (PDF)** et un
+    **lien vidéo YouTube** (« highlights ») visionnable directement sur la fiche.
   - Club : lieu, niveau de pratique, profils recherchés, projet sportif, projet humain, avantages.
 - **Page Annonces** avec les filtres **Tout / Joueurs / Coachs / Clubs**, triée du plus récent au plus ancien.
 - **Recherche avancée** qui s'adapte au filtre :

@@ -61,16 +61,35 @@
     if (a.meilleurNiveau) kv.push(['Meilleur niveau atteint', a.meilleurNiveau]);
     if (meta) kv.push(['Lieu', meta]);
 
+    const docs = [];
+    if (a.cvSportifFile)
+      docs.push(`<a class="btn ghost small" href="${escapeHtml(a.cvSportifFile)}" target="_blank">📄 CV sportif (PDF)</a>`);
+    if (a.cvProFile)
+      docs.push(`<a class="btn ghost small" href="${escapeHtml(a.cvProFile)}" target="_blank">📄 CV professionnel (PDF)</a>`);
+    const docsBlock = docs.length
+      ? `<div class="info-block"><h3>Documents</h3><div style="display:flex;gap:10px;flex-wrap:wrap">${docs.join('')}</div></div>`
+      : '';
+
+    const vid = youtubeId(a.videoUrl);
+    const videoBlock = vid
+      ? `<div class="info-block" style="grid-column:1/-1"><h3>Highlights vidéo</h3>
+           <div class="video-wrap"><iframe src="https://www.youtube.com/embed/${vid}"
+             title="Highlights" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+             allowfullscreen></iframe></div></div>`
+      : '';
+
     details = `
       <div class="section-grid">
         ${kv.length ? `<div class="info-block"><h3>Fiche</h3><dl class="kv">${kv
           .map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd>`)
           .join('')}</dl></div>` : ''}
+        ${videoBlock}
         ${chips('Autres postes joués', a.postesJoues)}
         ${chips('Caractéristiques dominantes', a.caracteristiques)}
         ${block('Descriptif du profil', a.description)}
         ${block('Qualités', a.qualites)}
         ${block('Axes de progression', a.axeProgression)}
+        ${docsBlock}
         ${block('CV sportif', a.cvSportif)}
         ${block('Palmarès', a.palmares)}
         ${block('Stats saison dernière', a.statsSaisonPassee)}

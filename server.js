@@ -34,6 +34,19 @@ const upload = multer({
   },
 });
 
+// Documents PDF (CV sportif / CV professionnel).
+const uploadDoc = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, store.id() + '.pdf'),
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8 Mo
+  fileFilter: (req, file, cb) => {
+    const ok = file.mimetype === 'application/pdf';
+    cb(ok ? null : new Error('Merci de joindre un fichier PDF.'), ok);
+  },
+});
+
 // ---- Middlewares ----
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -131,6 +144,14 @@ app.post('/api/upload', requireAuth, upload.single('photo'), (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// API : document PDF (CV)
+// ---------------------------------------------------------------------------
+app.post('/api/upload-doc', requireAuth, uploadDoc.single('doc'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu.' });
+  res.json({ url: '/uploads/' + req.file.filename });
+});
+
+// ---------------------------------------------------------------------------
 // API : profil / annonce
 // ---------------------------------------------------------------------------
 app.post('/api/profile', requireAuth, (req, res) => {
@@ -165,6 +186,9 @@ app.post('/api/profile', requireAuth, (req, res) => {
     caracteristiques: asArray(body.caracteristiques),
     qualites: (body.qualites || '').toString(),
     cvSportif: (body.cvSportif || '').toString(),
+    cvSportifFile: (body.cvSportifFile || '').toString(),
+    cvProFile: (body.cvProFile || '').toString(),
+    videoUrl: (body.videoUrl || '').toString().slice(0, 300),
     palmares: (body.palmares || '').toString(),
     statsSaisonPassee: (body.statsSaisonPassee || '').toString(),
     projetRecherche: (body.projetRecherche || '').toString(),
@@ -291,6 +315,16 @@ app.get('/api/annonces/:id', (req, res) => {
 
 // ---- Fichiers statiques + pages ----
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ---- Gestion d'erreurs (upload, etc.) : réponse JSON pour l'API ----
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const message =
+    err && err.code === 'LIMIT_FILE_SIZE'
+      ? 'Fichier trop volumineux.'
+      : (err && err.message) || 'Une erreur est survenue.';
+  res.status(400).json({ error: message });
+});
 
 app.listen(PORT, () => {
   console.log(`EBOK-MERCATO en ligne → http://localhost:${PORT}`);
