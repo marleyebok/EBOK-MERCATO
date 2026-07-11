@@ -27,8 +27,12 @@
   // Remplissage des listes
   fillSelect(document.getElementById('region'), vocab.regions, { selected: profile?.region });
   fillSelect(document.getElementById('poste'), vocab.postes, { placeholder: '—', selected: profile?.poste });
+  const niveauGroups = [
+    { label: 'Niveaux', values: vocab.niveaux },
+    { label: 'Autres parcours', values: vocab.autresParcours },
+  ];
   ['niveauActuel', 'niveauSaisonPassee', 'meilleurNiveau', 'niveauPratique', 'niveauRecherche'].forEach((k) => {
-    fillSelect(document.getElementById(k), vocab.niveaux, { selected: profile?.[k] });
+    fillSelectGrouped(document.getElementById(k), niveauGroups, { placeholder: '—', selected: profile?.[k] });
   });
   buildChecks(document.getElementById('postesJoues'), vocab.postes, 'postesJoues', profile?.postesJoues);
   buildChecks(document.getElementById('caracteristiques'), vocab.caracteristiques, 'caracteristiques', profile?.caracteristiques);

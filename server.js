@@ -73,6 +73,8 @@ const niveauIndex = (n) => vocab.NIVEAUX.indexOf(n);
 app.get('/api/vocab', (req, res) => {
   res.json({
     niveaux: vocab.NIVEAUX,
+    autresParcours: vocab.AUTRES_PARCOURS,
+    niveauxTous: vocab.NIVEAUX_TOUS,
     postes: vocab.POSTES,
     regions: vocab.REGIONS,
     avantages: vocab.AVANTAGES,

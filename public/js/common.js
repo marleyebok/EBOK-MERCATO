@@ -55,6 +55,21 @@ function fillSelect(select, values, { placeholder = '— Indifférent —', sele
   });
 }
 
+// Remplit un select avec des groupes : groups = [{ label, values }, ...]
+function fillSelectGrouped(select, groups, { placeholder = '— Indifférent —', selected = '' } = {}) {
+  select.innerHTML = '';
+  if (placeholder !== null) select.appendChild(el('option', { value: '' }, placeholder));
+  groups.forEach(({ label, values }) => {
+    const og = el('optgroup', { label });
+    values.forEach((v) => {
+      const o = el('option', { value: v }, v);
+      if (v === selected) o.selected = true;
+      og.appendChild(o);
+    });
+    select.appendChild(og);
+  });
+}
+
 function buildChecks(container, values, name, selected = []) {
   container.innerHTML = '';
   const sel = new Set(selected || []);
