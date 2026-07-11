@@ -27,12 +27,13 @@
   // Remplissage des listes
   fillSelect(document.getElementById('region'), vocab.regions, { selected: profile?.region });
   fillSelect(document.getElementById('poste'), vocab.postes, { placeholder: '—', selected: profile?.poste });
-  const niveauGroups = [
-    { label: 'Niveaux', values: vocab.niveaux },
-    { label: 'Autres parcours', values: vocab.autresParcours },
-  ];
+  const niveauFields = {};
   ['niveauActuel', 'niveauSaisonPassee', 'meilleurNiveau', 'niveauPratique', 'niveauRecherche'].forEach((k) => {
-    fillSelectGrouped(document.getElementById(k), niveauGroups, { placeholder: '—', selected: profile?.[k] });
+    niveauFields[k] = setupNiveauField(document.getElementById(k), {
+      niveaux: vocab.niveaux,
+      autres: vocab.autresParcours,
+      selected: profile?.[k],
+    });
   });
   buildChecks(document.getElementById('postesJoues'), vocab.postes, 'postesJoues', profile?.postesJoues);
   buildChecks(document.getElementById('caracteristiques'), vocab.caracteristiques, 'caracteristiques', profile?.caracteristiques);
@@ -92,8 +93,8 @@
     if (isClub) {
       Object.assign(payload, {
         nomClub: g('nomClub'),
-        niveauPratique: g('niveauPratique'),
-        niveauRecherche: g('niveauRecherche'),
+        niveauPratique: niveauFields.niveauPratique.getValue(),
+        niveauRecherche: niveauFields.niveauRecherche.getValue(),
         profilsRecherches: getChecked(document.getElementById('profilsRecherches'), 'profilsRecherches'),
         projetSportif: g('projetSportif'),
         projetHumain: g('projetHumain'),
@@ -108,9 +109,9 @@
         poids: g('poids'),
         poste: g('poste'),
         postesJoues: getChecked(document.getElementById('postesJoues'), 'postesJoues'),
-        niveauActuel: g('niveauActuel'),
-        niveauSaisonPassee: g('niveauSaisonPassee'),
-        meilleurNiveau: g('meilleurNiveau'),
+        niveauActuel: niveauFields.niveauActuel.getValue(),
+        niveauSaisonPassee: niveauFields.niveauSaisonPassee.getValue(),
+        meilleurNiveau: niveauFields.meilleurNiveau.getValue(),
         caracteristiques: getChecked(document.getElementById('caracteristiques'), 'caracteristiques'),
         description: g('description'),
         qualites: g('qualites'),

@@ -55,19 +55,35 @@ function fillSelect(select, values, { placeholder = '— Indifférent —', sele
   });
 }
 
-// Remplit un select avec des groupes : groups = [{ label, values }, ...]
-function fillSelectGrouped(select, groups, { placeholder = '— Indifférent —', selected = '' } = {}) {
-  select.innerHTML = '';
-  if (placeholder !== null) select.appendChild(el('option', { value: '' }, placeholder));
-  groups.forEach(({ label, values }) => {
-    const og = el('optgroup', { label });
-    values.forEach((v) => {
-      const o = el('option', { value: v }, v);
-      if (v === selected) o.selected = true;
-      og.appendChild(o);
-    });
-    select.appendChild(og);
-  });
+// Champ "niveau" : niveaux français + option "Autre" qui révèle un second menu
+// (NCAA, Highschool, Étranger…). Renvoie { getValue() }.
+const NIVEAU_AUTRE = 'Autre';
+function setupNiveauField(select, { niveaux, autres, placeholder = '—', selected = '' }) {
+  fillSelect(select, [...niveaux, NIVEAU_AUTRE], { placeholder });
+
+  const sub = el('select', { class: 'niveau-sub' });
+  sub.style.marginTop = '8px';
+  fillSelect(sub, autres, { placeholder: '— Précise le parcours —' });
+  sub.style.display = 'none';
+  select.insertAdjacentElement('afterend', sub);
+
+  function sync() {
+    if (select.value === NIVEAU_AUTRE) {
+      sub.style.display = '';
+    } else {
+      sub.style.display = 'none';
+      sub.value = '';
+    }
+  }
+  select.addEventListener('change', sync);
+
+  if (selected) {
+    if (niveaux.includes(selected)) select.value = selected;
+    else if (autres.includes(selected)) { select.value = NIVEAU_AUTRE; sub.value = selected; }
+  }
+  sync();
+
+  return { getValue: () => (select.value === NIVEAU_AUTRE ? sub.value : select.value) };
 }
 
 function buildChecks(container, values, name, selected = []) {
