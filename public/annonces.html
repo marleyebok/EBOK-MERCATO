@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Annonces — EBOK-MERCATO</title>
+  <link rel="icon" href="/img/logo.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="site">
+    <div class="site-inner">
+      <a class="brand" href="/"><img src="/img/logo.svg" alt="EBOK MERCATO" /></a>
+      <nav class="main" id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="toolbar">
+      <h1 class="page" style="margin:0">Annonces</h1>
+      <div class="segmented" id="filterSeg">
+        <button data-type="tout" class="active">Tout</button>
+        <button data-type="joueurs">Joueurs</button>
+        <button data-type="coachs">Coachs</button>
+        <button data-type="clubs">Clubs</button>
+      </div>
+    </div>
+
+    <details class="adv" id="adv">
+      <summary>Recherche avancée</summary>
+      <div class="adv-body">
+        <div class="row3">
+          <div>
+            <label for="f_texte">Recherche libre</label>
+            <input type="text" id="f_texte" placeholder="Nom, ville, mot-clé…" />
+          </div>
+          <div>
+            <label for="f_region">Région</label>
+            <select id="f_region"></select>
+          </div>
+          <div id="w_ville" style="display:none"></div>
+        </div>
+
+        <!-- Filtres visibles quand on cherche un CLUB (côté joueur) -->
+        <div id="advClub">
+          <div class="row3">
+            <div><label for="f_niveau">Niveau du club (min.)</label><select id="f_niveau"></select></div>
+            <div><label for="f_posteRecherche">Poste recherché par le club</label><select id="f_posteRecherche"></select></div>
+            <div><label for="f_avantage">Avantage proposé</label><select id="f_avantage"></select></div>
+          </div>
+        </div>
+
+        <!-- Filtres visibles quand on cherche un JOUEUR (côté club) -->
+        <div id="advJoueur" style="display:none">
+          <div class="row3">
+            <div><label for="f_poste">Poste</label><select id="f_poste"></select></div>
+            <div><label for="f_tailleMin">Taille min. (cm)</label><input type="number" id="f_tailleMin" min="120" max="250" /></div>
+            <div>
+              <label>Âge</label>
+              <div class="row">
+                <input type="number" id="f_ageMin" placeholder="min" min="10" max="70" />
+                <input type="number" id="f_ageMax" placeholder="max" min="10" max="70" />
+              </div>
+            </div>
+          </div>
+          <div class="row3">
+            <div><label for="f_niveauSaisonMin">Niveau saison passée (min.)</label><select id="f_niveauSaisonMin"></select></div>
+            <div><label for="f_meilleurNiveauMin">Meilleur niveau (min.)</label><select id="f_meilleurNiveauMin"></select></div>
+            <div><label for="f_caracteristique">Caractéristique dominante</label><select id="f_caracteristique"></select></div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:14px">
+          <button class="btn small" id="applyBtn" type="button">Appliquer</button>
+          <button class="btn ghost small" id="resetBtn" type="button">Réinitialiser</button>
+        </div>
+      </div>
+    </details>
+
+    <div id="count" class="hint" style="margin-bottom:12px"></div>
+    <div id="list" class="annonces"></div>
+  </main>
+
+  <footer class="site">
+    <div class="container">EBOK-MERCATO — un projet de la galaxie EBOK 🏀</div>
+  </footer>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/annonces.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 132" role="img" aria-label="EBOK MERCATO" font-family="Arial Black, Arial, Helvetica, sans-serif">
+  <!-- Bloc vert -->
+  <rect x="2" y="2" width="476" height="128" rx="30" fill="#4ca62e"/>
+  <!-- Bulle blanche (partie MERCATO) avec petite encoche -->
+  <path d="M196 14
+           H452
+           a18 18 0 0 1 18 18
+           V100
+           a18 18 0 0 1 -18 18
+           H210
+           a18 18 0 0 1 -18 -18
+           V44
+           l-14 -8
+           l14 -6
+           Z" fill="#ffffff"/>
+  <!-- EBOK -->
+  <text x="28" y="90" fill="#ffffff" font-size="70" font-weight="900" letter-spacing="1">EBOK</text>
+  <!-- MERCATO -->
+  <text x="214" y="90" fill="#4ca62e" font-size="62" font-weight="900" letter-spacing="1">MERCATO</text>
+</svg>

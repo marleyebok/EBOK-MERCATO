@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mon annonce — EBOK-MERCATO</title>
+  <link rel="icon" href="/img/logo.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="site">
+    <div class="site-inner">
+      <a class="brand" href="/"><img src="/img/logo.svg" alt="EBOK MERCATO" /></a>
+      <nav class="main" id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:820px">
+    <div class="toolbar">
+      <h1 class="page" style="margin:0">Mon annonce</h1>
+      <a class="btn ghost small" id="viewLink" href="#" style="display:none">Voir ma page publique</a>
+    </div>
+    <div id="msg"></div>
+
+    <form id="form" class="card">
+      <!-- Choix joueur/coach (membres uniquement) -->
+      <div id="kindRow" style="display:none">
+        <label>Je suis…</label>
+        <div class="segmented" id="kindSeg" style="width:100%">
+          <button type="button" data-kind="joueur" class="active" style="flex:1">Un joueur</button>
+          <button type="button" data-kind="coach" style="flex:1">Un coach</button>
+        </div>
+      </div>
+
+      <!-- Encart haut : slogan + photo -->
+      <fieldset>
+        <legend>En-tête de ma page</legend>
+        <label for="title">Titre / slogan <span class="hint">(l'encart en haut de ta page)</span></label>
+        <input type="text" id="title" placeholder="Ex : Meneur travailleur cherche projet ambitieux en Régional" />
+
+        <div class="row">
+          <div>
+            <label for="displayName" id="nameLabel">Nom affiché</label>
+            <input type="text" id="displayName" placeholder="Prénom Nom" />
+          </div>
+          <div>
+            <label>Photo</label>
+            <input type="file" id="photoFile" accept="image/*" />
+            <div class="hint" id="photoStatus"></div>
+            <input type="hidden" id="photo" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Localisation + niveau (commun) -->
+      <fieldset>
+        <legend>Localisation &amp; niveau</legend>
+        <div class="row">
+          <div><label for="region">Région</label><select id="region"></select></div>
+          <div><label for="ville">Ville</label><input type="text" id="ville" /></div>
+        </div>
+      </fieldset>
+
+      <!-- ============ BLOC JOUEUR / COACH ============ -->
+      <div id="blocMembre">
+        <fieldset>
+          <legend>Profil sportif</legend>
+          <div class="row3">
+            <div><label for="dateNaissance">Date de naissance</label><input type="date" id="dateNaissance" /></div>
+            <div><label for="taille">Taille (cm)</label><input type="number" id="taille" min="120" max="250" /></div>
+            <div><label for="poids">Poids (kg)</label><input type="number" id="poids" min="30" max="200" /></div>
+          </div>
+          <div class="row">
+            <div><label for="poste">Poste principal</label><select id="poste"></select></div>
+            <div><label>Autres postes joués</label><div class="checks" id="postesJoues"></div></div>
+          </div>
+          <div class="row3">
+            <div><label for="niveauActuel">Niveau recherché</label><select id="niveauActuel"></select></div>
+            <div><label for="niveauSaisonPassee">Niveau saison passée</label><select id="niveauSaisonPassee"></select></div>
+            <div><label for="meilleurNiveau">Meilleur niveau atteint</label><select id="meilleurNiveau"></select></div>
+          </div>
+          <label>Caractéristiques dominantes <span class="hint">(liste à affiner ensemble)</span></label>
+          <div class="checks" id="caracteristiques"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ma présentation</legend>
+          <label for="description">Descriptif de mon profil</label>
+          <textarea id="description"></textarea>
+          <label for="qualites">Qualités</label>
+          <textarea id="qualites"></textarea>
+          <label for="axeProgression">Axes de progression</label>
+          <textarea id="axeProgression"></textarea>
+          <label for="cvSportif">CV sportif <span class="hint">(clubs, saisons, parcours)</span></label>
+          <textarea id="cvSportif"></textarea>
+          <div class="row">
+            <div><label for="palmares">Palmarès</label><textarea id="palmares"></textarea></div>
+            <div><label for="statsSaisonPassee">Stats saison dernière</label><textarea id="statsSaisonPassee"></textarea></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Mon projet</legend>
+          <label for="projetRecherche">Projet sportif recherché</label>
+          <textarea id="projetRecherche"></textarea>
+          <label for="projetPro">Projet professionnel / études en parallèle</label>
+          <textarea id="projetPro"></textarea>
+          <label for="attentes">Mes attentes</label>
+          <textarea id="attentes"></textarea>
+          <label>Avantages souhaités <span class="hint">(liste à affiner ensemble)</span></label>
+          <div class="checks" id="avantagesMembre"></div>
+          <label for="espaceLibre">Espace libre <span class="hint">(écris ce que tu veux)</span></label>
+          <textarea id="espaceLibre"></textarea>
+        </fieldset>
+      </div>
+
+      <!-- ============ BLOC CLUB ============ -->
+      <div id="blocClub" style="display:none">
+        <fieldset>
+          <legend>Le club</legend>
+          <label for="nomClub">Nom du club / de l'équipe</label>
+          <input type="text" id="nomClub" />
+          <div class="row">
+            <div><label for="niveauPratique">Niveau de pratique</label><select id="niveauPratique"></select></div>
+            <div><label for="niveauRecherche">Niveau du profil recherché</label><select id="niveauRecherche"></select></div>
+          </div>
+          <label>Profils / postes recherchés</label>
+          <div class="checks" id="profilsRecherches"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Notre projet</legend>
+          <label for="projetSportif">Projet sportif</label>
+          <textarea id="projetSportif"></textarea>
+          <label for="projetHumain">Projet humain</label>
+          <textarea id="projetHumain"></textarea>
+          <label for="descriptionClub">Présentation générale</label>
+          <textarea id="descriptionClub"></textarea>
+          <label>Avantages proposés <span class="hint">(liste à affiner ensemble)</span></label>
+          <div class="checks" id="avantagesClub"></div>
+        </fieldset>
+      </div>
+
+      <label style="display:flex; align-items:center; gap:8px; font-weight:600">
+        <input type="checkbox" id="published" checked style="width:auto" />
+        Publier mon annonce (visible sur la page Annonces)
+      </label>
+
+      <button class="btn block" type="submit" style="margin-top:18px">Enregistrer mon annonce</button>
+    </form>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/mon-profil.js"></script>
+</body>
+</html>
