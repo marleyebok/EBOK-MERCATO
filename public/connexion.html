@@ -33,25 +33,6 @@
   </main>
 
   <script src="/js/common.js"></script>
-  <script>
-    renderHeader('connexion');
-    document.getElementById('form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById('msg');
-      msg.innerHTML = '';
-      try {
-        await api('/api/login', {
-          method: 'POST',
-          body: JSON.stringify({
-            email: document.getElementById('email').value.trim(),
-            password: document.getElementById('password').value,
-          }),
-        });
-        location.href = '/mon-profil.html';
-      } catch (err) {
-        msg.innerHTML = `<div class="msg err">${escapeHtml(err.message)}</div>`;
-      }
-    });
-  </script>
+  <script type="module" src="/js/pages/connexion.js"></script>
 </body>
 </html>

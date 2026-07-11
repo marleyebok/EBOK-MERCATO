@@ -1,13 +1,10 @@
 /**
- * Vocabulaire partagé (listes de valeurs) — source unique de vérité.
- * Exposé au frontend via GET /api/vocab.
- *
- * NOTE : "avantages" et "caracteristiques" sont des listes de départ,
- * à affiner ensemble plus tard (voir README).
+ * Vocabulaire partagé (listes de valeurs) — source unique de vérité côté client.
+ * "AVANTAGES" et "CARACTERISTIQUES" sont des listes de départ, à affiner ensemble.
  */
 
-// Du plus bas au plus haut niveau — l'ordre sert aux filtres "niveau minimum".
-const NIVEAUX = [
+// Niveaux français classés (l'ordre sert aux filtres "niveau minimum").
+export const NIVEAUX = [
   'Loisir',
   'Départemental',
   'Régional',
@@ -19,13 +16,10 @@ const NIVEAUX = [
   'Pro A',
 ];
 
-// Parcours particuliers, hors classement (choix exact, sans logique de min./max.).
-const AUTRES_PARCOURS = ['Étranger', 'NCAA', 'Highschool'];
+// Parcours particuliers, hors classement (choix exact).
+export const AUTRES_PARCOURS = ['Étranger', 'NCAA', 'Highschool'];
 
-// Liste complète pour les champs de profil (niveaux classés + autres parcours).
-const NIVEAUX_TOUS = [...NIVEAUX, ...AUTRES_PARCOURS];
-
-const POSTES = [
+export const POSTES = [
   'Meneur (1)',
   'Arrière (2)',
   'Ailier (3)',
@@ -33,7 +27,7 @@ const POSTES = [
   'Pivot (5)',
 ];
 
-const REGIONS = [
+export const REGIONS = [
   'Auvergne-Rhône-Alpes',
   'Bourgogne-Franche-Comté',
   'Bretagne',
@@ -55,7 +49,7 @@ const REGIONS = [
 ];
 
 // À affiner ensemble plus tard.
-const AVANTAGES = [
+export const AVANTAGES = [
   'Rémunération',
   'Logement',
   'Emploi / job aménagé',
@@ -68,7 +62,7 @@ const AVANTAGES = [
 ];
 
 // À affiner ensemble plus tard.
-const CARACTERISTIQUES = [
+export const CARACTERISTIQUES = [
   'Scoreur',
   'Shooteur longue distance',
   'Défenseur',
@@ -83,4 +77,4 @@ const CARACTERISTIQUES = [
   'Adresse mi-distance',
 ];
 
-module.exports = { NIVEAUX, AUTRES_PARCOURS, NIVEAUX_TOUS, POSTES, REGIONS, AVANTAGES, CARACTERISTIQUES };
+export const niveauIndex = (n) => NIVEAUX.indexOf(n);

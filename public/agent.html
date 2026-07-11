@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Annonce — EBOK-MERCATO</title>
+  <title>Mes joueurs — EBOK-MERCATO</title>
   <link rel="icon" href="/img/logo.svg" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
@@ -16,8 +16,13 @@
   </header>
 
   <main class="container">
-    <p style="margin-top:18px"><a href="/annonces.html">← Retour aux annonces</a></p>
-    <div id="content"></div>
+    <div class="toolbar">
+      <h1 class="page" style="margin:0">Mes joueurs</h1>
+      <a class="btn" href="/mon-profil.html?managed=1">+ Ajouter un joueur</a>
+    </div>
+    <p class="hint">En tant qu'agent, tu crées et mets à jour les fiches de tes joueurs, et tu discutes avec les clubs en leur nom depuis la messagerie.</p>
+    <div id="msg"></div>
+    <div id="list" class="annonces"></div>
   </main>
 
   <footer class="site">
@@ -25,6 +30,6 @@
   </footer>
 
   <script src="/js/common.js"></script>
-  <script type="module" src="/js/pages/profil.js"></script>
+  <script type="module" src="/js/pages/agent.js"></script>
 </body>
 </html>

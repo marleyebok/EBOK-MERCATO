@@ -28,6 +28,13 @@
           <div class="segmented" id="typeSeg" style="width:100%">
             <button type="button" data-type="membre" class="active" style="flex:1">Joueur / Coach</button>
             <button type="button" data-type="club" style="flex:1">Club / Équipe</button>
+            <button type="button" data-type="agent" style="flex:1">Agent</button>
+          </div>
+          <p class="hint" style="margin-top:8px">Un compte <strong>Agent</strong> peut créer et gérer plusieurs fiches de joueurs et discuter avec les clubs en leur nom.</p>
+
+          <div id="nameWrap" style="display:none">
+            <label for="displayName">Nom affiché <span class="hint">(nom du club / de l'agence)</span></label>
+            <input type="text" id="displayName" />
           </div>
 
           <label for="email">Email</label>
@@ -45,34 +52,6 @@
   </main>
 
   <script src="/js/common.js"></script>
-  <script>
-    renderHeader('inscription');
-    let accountType = 'membre';
-    const seg = document.getElementById('typeSeg');
-    seg.addEventListener('click', (e) => {
-      const b = e.target.closest('button'); if (!b) return;
-      accountType = b.dataset.type;
-      seg.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
-    });
-
-    document.getElementById('form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById('msg');
-      msg.innerHTML = '';
-      try {
-        await api('/api/register', {
-          method: 'POST',
-          body: JSON.stringify({
-            email: document.getElementById('email').value.trim(),
-            password: document.getElementById('password').value,
-            accountType,
-          }),
-        });
-        location.href = '/mon-profil.html';
-      } catch (err) {
-        msg.innerHTML = `<div class="msg err">${escapeHtml(err.message)}</div>`;
-      }
-    });
-  </script>
+  <script type="module" src="/js/pages/inscription.js"></script>
 </body>
 </html>

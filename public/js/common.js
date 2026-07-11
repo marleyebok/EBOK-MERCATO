@@ -1,27 +1,5 @@
-/* Helpers partagés + header dynamique selon l'état de connexion. */
-
-async function api(path, options = {}) {
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  let data = null;
-  try { data = await res.json(); } catch (e) { /* pas de corps JSON */ }
-  if (!res.ok) throw new Error((data && data.error) || 'Erreur serveur');
-  return data;
-}
-
-let _vocab = null;
-async function getVocab() {
-  if (_vocab) return _vocab;
-  _vocab = await api('/api/vocab');
-  return _vocab;
-}
-
-async function getSession() {
-  try { return await api('/api/me'); }
-  catch (e) { return { user: null, profile: null }; }
-}
+/* Helpers DOM partagés (script classique → fonctions globales réutilisables
+   par les modules de page). Aucune dépendance réseau ici. */
 
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
@@ -98,37 +76,6 @@ function buildChecks(container, values, name, selected = []) {
 
 function getChecked(container, name) {
   return Array.from(container.querySelectorAll(`input[name="${name}"]:checked`)).map((i) => i.value);
-}
-
-async function renderHeader(active) {
-  const { user, profile } = await getSession();
-  const nav = document.getElementById('nav');
-  if (!nav) return { user, profile };
-
-  const links = [
-    ['/', 'Accueil', 'accueil'],
-    ['/annonces.html', 'Annonces', 'annonces'],
-  ];
-  const frag = document.createDocumentFragment();
-  links.forEach(([href, label, key]) => {
-    frag.appendChild(el('a', { href, class: active === key ? 'active' : '' }, label));
-  });
-
-  if (user) {
-    frag.appendChild(el('a', { href: '/mon-profil.html', class: active === 'profil' ? 'active' : '' }, 'Mon annonce'));
-    frag.appendChild(
-      el('a', {
-        href: '#',
-        onclick: async (e) => { e.preventDefault(); await api('/api/logout', { method: 'POST' }); location.href = '/'; },
-      }, 'Déconnexion')
-    );
-  } else {
-    frag.appendChild(el('a', { href: '/connexion.html', class: active === 'connexion' ? 'active' : '' }, 'Connexion'));
-    frag.appendChild(el('a', { href: '/inscription.html', class: 'btn small' }, 'Créer un compte'));
-  }
-  nav.innerHTML = '';
-  nav.appendChild(frag);
-  return { user, profile };
 }
 
 function kindLabel(kind) {

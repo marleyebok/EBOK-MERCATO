@@ -1,53 +1,85 @@
 # 🏀 EBOK-MERCATO
 
-Le mercato du basket amateur : une plateforme de mise en relation entre **joueurs**, **coachs** et **clubs**.
+Le mercato du basket amateur : une plateforme de mise en relation entre **joueurs**, **coachs**, **agents** et **clubs**.
 Une sorte de « Indeed du basket » pour que les joueurs de niveau amateur et intermédiaire trouvent des projets sportifs adaptés à leur profil.
 
 Fait partie de la galaxie d'applications **EBOK**.
 
 ---
 
-## Démarrage
+## Architecture
 
-Aucune base de données à installer, aucun build. Il te faut juste [Node.js](https://nodejs.org) (version 18 ou plus).
+100 % **Firebase**, sans serveur applicatif à maintenir :
+
+- **Firebase Authentication** — comptes et connexion (email / mot de passe).
+- **Cloud Firestore** — utilisateurs, annonces, agents, messagerie.
+- **Firebase Storage** — photos et CV en PDF.
+- **Firebase Hosting** — hébergement du site (fichiers de `public/`).
+
+Le front est en HTML/CSS/JS pur (modules ES, aucun build). Un mini serveur statique
+(`server.js`, sans dépendance) sert juste au **développement local**.
+
+---
+
+## Fonctionnalités
+
+- **Quatre types de comptes** : *Joueur / Coach*, *Club / Équipe*, *Agent*.
+- **Annonces riches** :
+  - Joueur / coach : slogan, photo, CV sportif, palmarès, stats, poste, taille/poids, qualités,
+    axes de progression, projet recherché, projet pro/études, attentes, espace libre.
+    Pièces jointes **CV sportif (PDF)**, **CV professionnel (PDF)** et **vidéo highlights YouTube** intégrée.
+  - Club : lieu, niveau de pratique, profils recherchés, projet sportif, projet humain, avantages.
+- **Page Annonces** : filtres *Tout / Joueurs / Coachs / Clubs*, tri du plus récent, recherche avancée
+  (région, niveau, poste, avantages côté joueur ; âge, taille, poste, niveaux, caractéristiques côté club).
+- **Messagerie** en temps réel entre les acteurs (bouton « Contacter » sur chaque annonce).
+- **Profil Agent** : crée et gère plusieurs fiches de joueurs, les met à jour, et discute
+  avec les clubs en leur nom (les messages envoyés à un joueur géré arrivent à son agent).
+
+---
+
+## Mise en route
+
+### 1. Créer le projet Firebase
+
+1. Va sur [console.firebase.google.com](https://console.firebase.google.com) → **Ajouter un projet**.
+2. **Authentication** → *Sign-in method* → active **Adresse e-mail / Mot de passe**.
+3. **Firestore Database** → *Créer une base* (mode production).
+4. **Storage** → *Commencer*.
+5. **Paramètres du projet** → *Tes applications* → **Web (</>)** → récupère la config SDK.
+
+### 2. Renseigner la config
+
+Colle tes valeurs dans **`public/js/firebase-config.js`** (elles sont publiques par conception,
+la sécurité vient des règles ci-dessous — tu peux committer ce fichier).
+
+### 3. Déployer les règles de sécurité
+
+Les règles fournies (`firestore.rules`, `storage.rules`) verrouillent l'accès :
+annonces publiées lisibles par tous, le reste réservé au propriétaire / aux participants d'une conversation.
 
 ```bash
-npm install
-npm start
+npm install -g firebase-tools
+firebase login
+cp .firebaserc.example .firebaserc   # puis mets ton PROJECT_ID
+firebase deploy --only firestore:rules,storage
 ```
 
-Puis ouvre **http://localhost:3000**.
+### 4. Lancer en local
 
-Pour changer le port : `PORT=8080 npm start`.
+```bash
+npm start          # → http://localhost:3000
+```
 
----
+(Un simple serveur statique. Tu peux aussi utiliser `firebase serve`.)
 
-## Ce que fait le site
+### 5. Mettre en ligne
 
-- **Deux types de comptes** : *Joueur / Coach* et *Club / Équipe*.
-- **Création d'une annonce** riche :
-  - Joueur / coach : slogan, photo, CV sportif, palmarès, stats saison dernière, poste, taille/poids,
-    qualités, axes de progression, projet recherché, projet pro/études, attentes, espace libre, etc.
-    Possibilité de joindre un **CV sportif (PDF)**, un **CV professionnel (PDF)** et un
-    **lien vidéo YouTube** (« highlights ») visionnable directement sur la fiche.
-  - Club : lieu, niveau de pratique, profils recherchés, projet sportif, projet humain, avantages.
-- **Page Annonces** avec les filtres **Tout / Joueurs / Coachs / Clubs**, triée du plus récent au plus ancien.
-- **Recherche avancée** qui s'adapte au filtre :
-  - Côté joueur (cherche un club) : région, niveau, poste recherché, avantages.
-  - Côté club (cherche un joueur) : âge, taille, poste, niveau saison passée, meilleur niveau, caractéristique dominante.
-- **Page publique** détaillée pour chaque annonce.
+```bash
+firebase deploy --only hosting
+```
 
----
-
-## À affiner ensemble plus tard
-
-Comme convenu, deux listes sont posées comme point de départ et sont faciles à modifier —
-tout est centralisé dans **`lib/vocab.js`** :
-
-- `AVANTAGES` — les avantages proposés / recherchés.
-- `CARACTERISTIQUES` — les caractéristiques dominantes d'un joueur.
-
-Les autres listes (niveaux, postes, régions) s'y trouvent aussi.
+> ℹ️ Au premier chargement d'une liste, Firestore peut te proposer de créer un index
+> (lien en un clic dans la console) : accepte-le si demandé.
 
 ---
 
@@ -55,26 +87,29 @@ Les autres listes (niveaux, postes, régions) s'y trouvent aussi.
 
 ```
 EBOK-MERCATO/
-├── server.js            # Serveur Express + API
-├── lib/
-│   ├── store.js         # Stockage fichier JSON (data/db.json)
-│   └── vocab.js         # Listes de valeurs (niveaux, postes, régions, avantages, caractéristiques)
-├── public/              # Frontend (HTML / CSS / JS, sans build)
-│   ├── index.html       # Accueil
-│   ├── inscription.html # Création de compte
-│   ├── connexion.html   # Connexion
-│   ├── annonces.html    # Liste + filtres + recherche avancée
-│   ├── mon-profil.html  # Édition de son annonce
-│   ├── profil.html      # Page publique d'une annonce
-│   ├── css/style.css
-│   ├── js/
-│   └── img/logo.svg
-└── data/db.json         # Données (créé automatiquement, ignoré par git)
+├── firebase.json          # config Hosting / Firestore / Storage
+├── firestore.rules        # règles d'accès Firestore
+├── storage.rules          # règles d'accès Storage
+├── .firebaserc.example    # à copier en .firebaserc avec ton PROJECT_ID
+├── server.js              # mini serveur statique (dev local, zéro dépendance)
+└── public/
+    ├── index.html · annonces.html · inscription.html · connexion.html
+    ├── mon-profil.html · profil.html · agent.html · messages.html
+    ├── css/style.css · img/logo.svg
+    └── js/
+        ├── firebase-config.js   # ⚙️ TA config Firebase
+        ├── db.js                # couche de données Firebase (auth, profils, agents, messagerie, upload)
+        ├── ui.js                # en-tête + gardes d'accès
+        ├── vocab.js             # listes (niveaux, postes, régions, avantages, caractéristiques)
+        ├── common.js            # helpers DOM
+        └── pages/               # un module par page
 ```
 
-## Notes techniques
+---
 
-- Stockage : simple fichier `data/db.json` (parfait pour un MVP, migrable vers une vraie base plus tard).
-- Mots de passe hachés avec `bcryptjs`. Sessions via cookie signé.
-- Photos envoyées dans `public/uploads/`.
-- Pensé pour rester **le plus simple possible** et facile à faire évoluer.
+## À affiner ensemble plus tard
+
+Listes de départ, faciles à modifier dans **`public/js/vocab.js`** :
+
+- `AVANTAGES` — avantages proposés / recherchés.
+- `CARACTERISTIQUES` — caractéristiques dominantes d'un joueur.
