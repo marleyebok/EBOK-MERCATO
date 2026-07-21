@@ -1,115 +1,58 @@
 # 🏀 EBOK-MERCATO
 
-Le mercato du basket amateur : une plateforme de mise en relation entre **joueurs**, **coachs**, **agents** et **clubs**.
-Une sorte de « Indeed du basket » pour que les joueurs de niveau amateur et intermédiaire trouvent des projets sportifs adaptés à leur profil.
+Le mercato du basket amateur : une plateforme de mise en relation entre
+**joueurs**, **coachs**, **agents** et **clubs**. Une sorte de « Indeed du
+basket » pour trouver des projets sportifs adaptés à son profil.
+Un outil de la galaxie EBOK Basketball.
 
-Fait partie de la galaxie d'applications **EBOK**.
+## Architecture (migré de Firebase vers Neon)
 
----
+Cet outil tournait sur Firebase (Auth + Firestore + Storage). Il a été **migré
+vers la base Neon partagée de la galaxie**, pour tout centraliser au même endroit.
 
-## Architecture
+- **Front-end** : inchangé — pages statiques HTML/CSS/JS dans `public/`.
+- **Données** : PostgreSQL (Neon), schéma `mercato` + identité dans `shared.users`.
+- **API** : fonctions serverless dans `api/` (Vercel), appelées par
+  `public/js/db.js`. Les signatures de `db.js` sont restées identiques :
+  les pages n'ont pas eu à changer.
+- **Auth** : e-mail / mot de passe, session par cookie signé (JWT) posé sur
+  `.ebok.fr` → pose déjà les bases du compte unique de la galaxie.
+- **Fichiers** (photos, CV) : Vercel Blob.
 
-100 % **Firebase**, sans serveur applicatif à maintenir :
+### Schéma de données
 
-- **Firebase Authentication** — comptes et connexion (email / mot de passe).
-- **Cloud Firestore** — utilisateurs, annonces, agents, messagerie.
-- **Firebase Storage** — photos et CV en PDF.
-- **Firebase Hosting** — hébergement du site (fichiers de `public/`).
+| Table | Rôle |
+|---|---|
+| `shared.users` | identité (uid, email, mot de passe haché, nom) |
+| `mercato.accounts` | rôle Mercato : `membre` / `club` / `agent` |
+| `mercato.profiles` | annonces (colonnes clés + `data` JSONB) |
+| `mercato.conversations` / `mercato.messages` | messagerie |
 
-Le front est en HTML/CSS/JS pur (modules ES, aucun build). Un mini serveur statique
-(`server.js`, sans dépendance) sert juste au **développement local**.
+Les tables se créent **automatiquement** au premier appel API.
 
----
+## Configuration (Vercel → Settings → Environment Variables)
 
-## Fonctionnalités
+| Variable | Valeur |
+|---|---|
+| `DATABASE_URL` | La **même** connection string Neon que le reste de la galaxie |
+| `SESSION_SECRET` | Une longue chaîne aléatoire (signe les cookies de session) |
 
-- **Quatre types de comptes** : *Joueur / Coach*, *Club / Équipe*, *Agent*.
-- **Annonces riches** :
-  - Joueur / coach : slogan, photo, CV sportif, palmarès, stats, poste, taille/poids, qualités,
-    axes de progression, projet recherché, projet pro/études, attentes, espace libre.
-    Pièces jointes **CV sportif (PDF)**, **CV professionnel (PDF)** et **vidéo highlights YouTube** intégrée.
-  - Club : lieu, niveau de pratique, profils recherchés, projet sportif, projet humain, avantages.
-- **Page Annonces** : filtres *Tout / Joueurs / Coachs / Clubs*, tri du plus récent, recherche avancée
-  (région, niveau, poste, avantages côté joueur ; âge, taille, poste, niveaux, caractéristiques côté club).
-- **Messagerie** en temps réel entre les acteurs (bouton « Contacter » sur chaque annonce).
-- **Profil Agent** : crée et gère plusieurs fiches de joueurs, les met à jour, et discute
-  avec les clubs en leur nom (les messages envoyés à un joueur géré arrivent à son agent).
+Pour l'upload des photos / CV : onglet **Storage → Create Database → Blob →
+Connect** (injecte `BLOB_READ_WRITE_TOKEN` tout seul). Sans lui, l'upload est
+désactivé mais le reste fonctionne.
 
----
-
-## Mise en route
-
-### 1. Créer le projet Firebase
-
-1. Va sur [console.firebase.google.com](https://console.firebase.google.com) → **Ajouter un projet**.
-2. **Authentication** → *Sign-in method* → active **Adresse e-mail / Mot de passe**.
-3. **Firestore Database** → *Créer une base* (mode production).
-4. **Storage** → *Commencer*.
-5. **Paramètres du projet** → *Tes applications* → **Web (</>)** → récupère la config SDK.
-
-### 2. Renseigner la config
-
-Colle tes valeurs dans **`public/js/firebase-config.js`** (elles sont publiques par conception,
-la sécurité vient des règles ci-dessous — tu peux committer ce fichier).
-
-### 3. Déployer les règles de sécurité
-
-Les règles fournies (`firestore.rules`, `storage.rules`) verrouillent l'accès :
-annonces publiées lisibles par tous, le reste réservé au propriétaire / aux participants d'une conversation.
+## Développement local
 
 ```bash
-npm install -g firebase-tools
-firebase login
-cp .firebaserc.example .firebaserc   # puis mets ton PROJECT_ID
-firebase deploy --only firestore:rules,storage
+npm install
+npm start          # sert public/ sur http://localhost:3000 (statique seul)
 ```
 
-### 4. Lancer en local
+Pour tester aussi les fonctions `api/` en local : `vercel dev` (nécessite le
+CLI Vercel et un `.env.local` — voir `.env.example`).
 
-```bash
-npm start          # → http://localhost:3000
-```
+## Points d'API
 
-(Un simple serveur statique. Tu peux aussi utiliser `firebase serve`.)
-
-### 5. Mettre en ligne
-
-```bash
-firebase deploy --only hosting
-```
-
-> ℹ️ Au premier chargement d'une liste, Firestore peut te proposer de créer un index
-> (lien en un clic dans la console) : accepte-le si demandé.
-
----
-
-## Structure du projet
-
-```
-EBOK-MERCATO/
-├── firebase.json          # config Hosting / Firestore / Storage
-├── firestore.rules        # règles d'accès Firestore
-├── storage.rules          # règles d'accès Storage
-├── .firebaserc.example    # à copier en .firebaserc avec ton PROJECT_ID
-├── server.js              # mini serveur statique (dev local, zéro dépendance)
-└── public/
-    ├── index.html · annonces.html · inscription.html · connexion.html
-    ├── mon-profil.html · profil.html · agent.html · messages.html
-    ├── css/style.css · img/logo.svg
-    └── js/
-        ├── firebase-config.js   # ⚙️ TA config Firebase
-        ├── db.js                # couche de données Firebase (auth, profils, agents, messagerie, upload)
-        ├── ui.js                # en-tête + gardes d'accès
-        ├── vocab.js             # listes (niveaux, postes, régions, avantages, caractéristiques)
-        ├── common.js            # helpers DOM
-        └── pages/               # un module par page
-```
-
----
-
-## À affiner ensemble plus tard
-
-Listes de départ, faciles à modifier dans **`public/js/vocab.js`** :
-
-- `AVANTAGES` — avantages proposés / recherchés.
-- `CARACTERISTIQUES` — caractéristiques dominantes d'un joueur.
+`/api/auth` (session, register, login, logout) · `/api/profiles` (annonces) ·
+`/api/messages` (messagerie) · `/api/users` (infos publiques) · `/api/upload`
+(fichiers). La messagerie utilise du **polling** (pas de temps réel Firestore).

@@ -1,12 +1,18 @@
 {
   "name": "ebok-mercato",
-  "version": "0.2.0",
-  "description": "EBOK-MERCATO — la plateforme de rencontre entre joueurs, coachs, agents et clubs de basket (Firebase).",
-  "type": "commonjs",
-  "main": "server.js",
+  "version": "0.3.0",
+  "description": "EBOK-MERCATO — la plateforme de rencontre entre joueurs, coachs, agents et clubs de basket (Neon).",
+  "type": "module",
+  "main": "server.cjs",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.cjs",
+    "dev": "node server.cjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@vercel/blob": "^2.6.1",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6"
   },
   "engines": {
     "node": ">=18"

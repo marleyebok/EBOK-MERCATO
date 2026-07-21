@@ -1,260 +1,208 @@
 /**
- * Couche de données EBOK-MERCATO sur Firebase (Auth + Firestore + Storage).
- * Tout est côté client ; la sécurité est assurée par firestore.rules / storage.rules.
+ * Couche de données EBOK-MERCATO — désormais sur Neon (via les fonctions
+ * serverless /api/*), en remplacement de Firebase.
  *
- * Collections Firestore :
- *   users/{uid}         : { email, accountType: 'membre'|'club'|'agent', displayName, createdAt }
- *   profiles/{id}       : annonce (joueur/coach/club). id = uid pour un profil personnel ;
- *                         id auto pour un joueur géré par un agent (agentManaged: true).
- *   conversations/{id}  : { participants:[uid,uid], aboutProfileId, aboutTitle,
- *                           lastMessage, lastSenderUid, updatedAt, createdAt }
- *     messages/{id}     : { senderUid, text, createdAt }
+ * Les signatures exportées sont IDENTIQUES à l'ancienne version Firebase :
+ * les pages (annonces, mon-profil, agent, messages…) n'ont pas à changer.
+ *
+ * Modèle (voir api/_lib.js) :
+ *   shared.users / mercato.accounts : identité + rôle (membre|club|agent)
+ *   mercato.profiles                : annonces (JSONB)
+ *   mercato.conversations/messages  : messagerie (polling, pas de temps réel)
  */
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, updateProfile,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc,
-  updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import {
-  getStorage, ref, uploadBytes, getDownloadURL,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
-import { firebaseConfig, isConfigured } from './firebase-config.js';
 
-let app, auth, db, storage;
+let _session = null; // { uid, email, displayName, accountType } | null
 
-export function initFirebase() {
-  if (!isConfigured()) return false;
-  if (!app) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
+async function api(path, { method = "GET", body, headers, raw } = {}) {
+  const opts = { method, credentials: "include", headers: headers || {} };
+  if (body !== undefined) {
+    if (raw) {
+      opts.body = body;
+    } else {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
   }
-  return true;
+  const res = await fetch(path, opts);
+  let data = {};
+  try { data = await res.json(); } catch { /* ignore */ }
+  return { ok: res.ok, status: res.status, data };
 }
 
-export { isConfigured };
-export const uid = () => auth && auth.currentUser && auth.currentUser.uid;
+const ERRORS = {
+  email_pris: "Cet e-mail est déjà utilisé.",
+  identifiants: "E-mail ou mot de passe incorrect.",
+  password_court: "Mot de passe trop court (6 caractères minimum).",
+  email: "Adresse e-mail invalide.",
+  db_unavailable: "Service indisponible — base de données non configurée.",
+  auth: "Vous devez être connecté.",
+};
+function fail(data) {
+  return new Error(ERRORS[data && data.error] || "Une erreur est survenue.");
+}
+
+// Compat : plus de Firebase à initialiser. Le service est prêt dès qu'il y a une base.
+export function initFirebase() { return true; }
+export function isConfigured() { return true; }
+export const uid = () => (_session ? _session.uid : null);
 
 // ---------------------------------------------------------------------------
 // Authentification
 // ---------------------------------------------------------------------------
 export async function register({ email, password, accountType, displayName }) {
-  initFirebase();
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  if (displayName) await updateProfile(cred.user, { displayName });
-  await setDoc(doc(db, 'users', cred.user.uid), {
-    email,
-    accountType, // 'membre' | 'club' | 'agent'
-    displayName: displayName || '',
-    createdAt: serverTimestamp(),
-  });
-  return cred.user;
+  const { ok, data } = await api("/api/auth", { method: "POST", body: { action: "register", email, password, accountType, displayName } });
+  if (!ok) throw fail(data);
+  _session = data.user;
+  return data.user;
 }
 
 export async function login({ email, password }) {
-  initFirebase();
-  const cred = await signInWithEmailAndPassword(auth, email, password);
-  return cred.user;
+  const { ok, data } = await api("/api/auth", { method: "POST", body: { action: "login", email, password } });
+  if (!ok) throw fail(data);
+  _session = data.user;
+  return data.user;
 }
 
 export async function logout() {
-  initFirebase();
-  await signOut(auth);
+  await api("/api/auth", { method: "POST", body: { action: "logout" } });
+  _session = null;
 }
 
-// Renvoie la session courante (résolue après le 1er état d'auth).
-export function getSessionOnce() {
-  return new Promise((resolve) => {
-    if (!initFirebase()) return resolve({ configured: false, user: null });
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      unsub();
-      if (!u) return resolve({ configured: true, user: null });
-      let data = {};
-      try {
-        const snap = await getDoc(doc(db, 'users', u.uid));
-        if (snap.exists()) data = snap.data();
-      } catch (e) { /* ignore */ }
-      resolve({ configured: true, user: { uid: u.uid, email: u.email, ...data } });
-    });
-  });
+export async function getSessionOnce() {
+  const { data } = await api("/api/auth");
+  _session = data.user || null;
+  return { configured: true, user: _session };
 }
 
 // ---------------------------------------------------------------------------
 // Profils / annonces
 // ---------------------------------------------------------------------------
 export async function getMyProfile() {
-  initFirebase();
-  const snap = await getDoc(doc(db, 'profiles', uid()));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  const { data } = await api("/api/profiles?mine=1");
+  return data.profile || null;
 }
-
-// Profil personnel (membre / club) : doc dont l'id = uid.
-export async function saveMyProfile(data) {
-  initFirebase();
-  const refd = doc(db, 'profiles', uid());
-  const snap = await getDoc(refd);
-  const payload = {
-    ...data,
-    ownerUid: uid(),
-    agentManaged: false,
-    updatedAt: serverTimestamp(),
-  };
-  if (!snap.exists()) payload.createdAt = serverTimestamp();
-  await setDoc(refd, payload, { merge: true });
-  return { id: uid(), ...payload };
+export async function saveMyProfile(payload) {
+  const { ok, data } = await api("/api/profiles", { method: "POST", body: payload });
+  if (!ok) throw fail(data);
+  return data.profile;
 }
-
 export async function getAnnonce(id) {
-  initFirebase();
-  const snap = await getDoc(doc(db, 'profiles', id));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() };
+  const { ok, data } = await api("/api/profiles?id=" + encodeURIComponent(id));
+  return ok ? data.profile : null;
 }
-
-// Toutes les annonces publiées (tri client-side, pas d'index composite requis).
 export async function listAnnonces() {
-  initFirebase();
-  const q = query(collection(db, 'profiles'), where('published', '==', true));
-  const snap = await getDocs(q);
-  const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  items.sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt));
-  return items;
+  const { data } = await api("/api/profiles");
+  return data.profiles || [];
 }
 
 // ---------------------------------------------------------------------------
 // Agent : gestion de plusieurs joueurs
 // ---------------------------------------------------------------------------
 export async function listManagedProfiles() {
-  initFirebase();
-  const q = query(collection(db, 'profiles'), where('ownerUid', '==', uid()));
-  const snap = await getDocs(q);
-  return snap.docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((p) => p.agentManaged)
-    .sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt));
+  const { data } = await api("/api/profiles?managed=1");
+  return data.profiles || [];
 }
-
 export async function getManagedProfile(id) {
-  initFirebase();
-  const snap = await getDoc(doc(db, 'profiles', id));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() };
+  const { data } = await api("/api/profiles?managed=1&id=" + encodeURIComponent(id));
+  return data.profile || null;
 }
-
-export async function saveManagedProfile(id, data) {
-  initFirebase();
-  const payload = { ...data, ownerUid: uid(), agentManaged: true, kind: data.kind || 'joueur', updatedAt: serverTimestamp() };
-  if (id) {
-    await setDoc(doc(db, 'profiles', id), payload, { merge: true });
-    return { id, ...payload };
-  }
-  payload.createdAt = serverTimestamp();
-  const refd = await addDoc(collection(db, 'profiles'), payload);
-  return { id: refd.id, ...payload };
+export async function saveManagedProfile(id, payload) {
+  const body = { ...payload, managed: 1 };
+  if (id) body.id = id;
+  const { ok, data } = await api("/api/profiles", { method: "POST", body });
+  if (!ok) throw fail(data);
+  return data.profile;
 }
-
 export async function deleteManagedProfile(id) {
-  initFirebase();
-  await deleteDoc(doc(db, 'profiles', id));
+  await api("/api/profiles?id=" + encodeURIComponent(id), { method: "DELETE" });
 }
 
 // ---------------------------------------------------------------------------
-// Fichiers (photos, PDF) → Firebase Storage
+// Fichiers (photos, PDF) → Vercel Blob
 // ---------------------------------------------------------------------------
-export async function uploadFile(file, folder = 'divers') {
-  initFirebase();
-  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `uploads/${uid()}/${folder}/${Date.now()}_${safe}`;
-  const r = ref(storage, path);
-  await uploadBytes(r, file);
-  return await getDownloadURL(r);
+export async function uploadFile(file, folder = "divers") {
+  const { ok, data } = await api("/api/upload", {
+    method: "POST",
+    raw: true,
+    body: file,
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+      "x-filename": file.name || "fichier",
+      "x-folder": folder,
+    },
+  });
+  if (!ok) throw fail(data);
+  return data.url;
 }
 
 // ---------------------------------------------------------------------------
-// Messagerie
+// Messagerie (polling au lieu du temps réel Firestore)
 // ---------------------------------------------------------------------------
 export function conversationId(otherUid, aboutProfileId) {
-  const pair = [uid(), otherUid].sort().join('__');
+  const pair = [uid(), otherUid].sort().join("__");
   return aboutProfileId ? `${pair}__${aboutProfileId}` : pair;
 }
 
-// Démarre (ou récupère) une conversation avec le propriétaire d'une annonce.
 export async function startConversation(otherUid, aboutProfileId, aboutTitle) {
-  initFirebase();
-  const convId = conversationId(otherUid, aboutProfileId);
-  const refd = doc(db, 'conversations', convId);
-  const snap = await getDoc(refd);
-  if (!snap.exists()) {
-    await setDoc(refd, {
-      participants: [uid(), otherUid],
-      aboutProfileId: aboutProfileId || '',
-      aboutTitle: aboutTitle || '',
-      lastMessage: '',
-      lastSenderUid: '',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  }
-  return convId;
+  const { ok, data } = await api("/api/messages", { method: "POST", body: { action: "start", otherUid, aboutProfileId, aboutTitle } });
+  if (!ok) throw fail(data);
+  return data.convId;
 }
 
 export async function sendMessage(convId, text) {
-  initFirebase();
-  const clean = (text || '').trim();
+  const clean = (text || "").trim();
   if (!clean) return;
-  await addDoc(collection(db, 'conversations', convId, 'messages'), {
-    senderUid: uid(),
-    text: clean,
-    createdAt: serverTimestamp(),
-  });
-  await updateDoc(doc(db, 'conversations', convId), {
-    lastMessage: clean.slice(0, 140),
-    lastSenderUid: uid(),
-    updatedAt: serverTimestamp(),
-  });
+  const { ok, data } = await api("/api/messages", { method: "POST", body: { action: "send", convId, text: clean } });
+  if (!ok) throw fail(data);
 }
 
+/** Interroge la liste des conversations en boucle (retourne une fonction d'arrêt). */
 export function watchConversations(cb) {
-  initFirebase();
-  const q = query(collection(db, 'conversations'), where('participants', 'array-contains', uid()));
-  return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    items.sort((a, b) => ms(b.updatedAt) - ms(a.updatedAt));
-    cb(items);
-  });
+  let stop = false;
+  async function tick() {
+    if (stop) return;
+    try {
+      const { data } = await api("/api/messages?list=1");
+      if (!stop) cb(data.conversations || []);
+    } catch { /* ignore */ }
+    if (!stop) setTimeout(tick, 4000);
+  }
+  tick();
+  return () => { stop = true; };
 }
 
 export async function getConversation(convId) {
-  initFirebase();
-  const snap = await getDoc(doc(db, 'conversations', convId));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  const { data } = await api("/api/messages?meta=1&conv=" + encodeURIComponent(convId));
+  return data.conversation || null;
 }
 
+/** Interroge les messages d'un fil en boucle (retourne une fonction d'arrêt). */
 export function watchMessages(convId, cb) {
-  initFirebase();
-  const q = query(collection(db, 'conversations', convId, 'messages'), orderBy('createdAt'));
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+  let stop = false;
+  async function tick() {
+    if (stop) return;
+    try {
+      const { data } = await api("/api/messages?conv=" + encodeURIComponent(convId));
+      if (!stop) cb(data.messages || []);
+    } catch { /* ignore */ }
+    if (!stop) setTimeout(tick, 3000);
+  }
+  tick();
+  return () => { stop = true; };
 }
 
 // ---------------------------------------------------------------------------
 // Lectures publiques utiles à l'affichage
 // ---------------------------------------------------------------------------
 export async function getUserPublic(otherUid) {
-  initFirebase();
-  const snap = await getDoc(doc(db, 'users', otherUid));
-  return snap.exists() ? { uid: otherUid, ...snap.data() } : { uid: otherUid };
+  const { data } = await api("/api/users?uid=" + encodeURIComponent(otherUid));
+  return data.user || { uid: otherUid };
 }
 
-// Convertit un Timestamp Firestore (ou null) en millisecondes.
-function ms(ts) {
+// Les dates sont déjà en millisecondes (renvoyées par l'API).
+export function ms(ts) {
+  if (typeof ts === "number") return ts;
   if (!ts) return 0;
-  if (typeof ts.toMillis === 'function') return ts.toMillis();
-  if (ts.seconds) return ts.seconds * 1000;
-  return 0;
+  const n = new Date(ts).getTime();
+  return Number.isNaN(n) ? 0 : n;
 }
-export { ms };
