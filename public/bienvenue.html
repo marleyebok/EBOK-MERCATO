@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bienvenue — EBOK-MERCATO</title>
+  <link rel="icon" href="/img/logo.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <!-- Barre commune de la galaxie EBOK (fichier identique dans toutes les apps) -->
+  <script src="/js/ebok-galaxy.js" defer></script>
+</head>
+<body>
+  <header class="site">
+    <div class="site-inner">
+      <a class="brand" href="/"><img src="/img/logo.svg" alt="EBOK MERCATO" /></a>
+      <nav class="main" id="nav"></nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="auth-wrap">
+      <div class="card" id="onboard" style="display:none">
+        <h1 class="page">Bienvenue !</h1>
+        <p class="hint">Dernière étape : choisis ton type de compte pour commencer.</p>
+
+        <div id="msg"></div>
+
+        <form id="form">
+          <label>Type de compte</label>
+          <div class="segmented" id="typeSeg" style="width:100%">
+            <button type="button" data-type="membre" class="active" style="flex:1">Joueur / Coach</button>
+            <button type="button" data-type="club" style="flex:1">Club / Équipe</button>
+            <button type="button" data-type="agent" style="flex:1">Agent</button>
+          </div>
+          <p class="hint" style="margin-top:8px">Un compte <strong>Agent</strong> peut créer et gérer plusieurs fiches de joueurs et discuter avec les clubs en leur nom.</p>
+
+          <div id="nameWrap" style="display:none">
+            <label for="displayName">Nom affiché <span class="hint">(nom du club / de l'agence)</span></label>
+            <input type="text" id="displayName" />
+          </div>
+
+          <button class="btn block" type="submit" style="margin-top:20px">Continuer</button>
+        </form>
+      </div>
+
+      <div class="card" id="loading">
+        <p class="hint">Un instant…</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script type="module" src="/js/pages/bienvenue.js"></script>
+</body>
+</html>

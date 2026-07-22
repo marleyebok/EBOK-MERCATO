@@ -1,8 +1,10 @@
 /**
  * Infos publiques d'un utilisateur (pour afficher un interlocuteur).
  *   GET /api/users?uid=X
+ *
+ * Zéro miroir : le nom / e-mail viennent de Clerk, le rôle Mercato de Neon.
  */
-import { ensureSchema, hasDb, sql, json, sessionUid } from "./_lib.js";
+import { ensureSchema, hasDb, sql, json, sessionUid, clerkUser } from "./_lib.js";
 
 export default async function handler(req, res) {
   if (!hasDb()) return json(res, 503, { error: "db_unavailable" });
@@ -11,15 +13,17 @@ export default async function handler(req, res) {
   const uid = String((req.query || {}).uid || "");
   if (!uid) return json(res, 400, { error: "uid" });
   try {
-    const rows = await sql()`
-      SELECT u.uid, u.display_name, a.account_type
-      FROM shared.users u LEFT JOIN mercato.accounts a ON a.uid = u.uid
-      WHERE u.uid = ${uid}`;
-    const r = rows[0];
+    const [rows, info] = await Promise.all([
+      sql()`SELECT account_type, display_name FROM mercato.accounts WHERE uid = ${uid}`,
+      clerkUser(uid),
+    ]);
+    const acc = rows[0];
     return json(res, 200, {
-      user: r
-        ? { uid: r.uid, displayName: r.display_name || "", accountType: r.account_type || "" }
-        : { uid },
+      user: {
+        uid,
+        displayName: (acc && acc.display_name) || info.name || "",
+        accountType: acc ? acc.account_type || "" : "",
+      },
     });
   } catch (e) {
     console.error("users:", e);

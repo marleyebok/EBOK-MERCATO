@@ -1,27 +1,11 @@
-/* En-tête dynamique + gardes d'accès. Dépend de db.js (Firebase). */
-import { getSessionOnce, logout, isConfigured } from './db.js';
+/* En-tête dynamique + gardes d'accès. Identité via Clerk (voir db.js). */
+import { getSessionOnce, logout } from './db.js';
 
 const KIND_LABEL = { joueur: 'Joueur', coach: 'Coach', club: 'Club / Équipe', agent: 'Agent' };
 export const accountLabel = (t) => KIND_LABEL[t] || t;
 
-// Bannière si la config Firebase n'est pas renseignée.
-function configBanner() {
-  const div = document.createElement('div');
-  div.className = 'msg err';
-  div.style.margin = '20px auto';
-  div.style.maxWidth = '900px';
-  div.innerHTML =
-    'Firebase n\'est pas encore configuré. Renseigne <code>public/js/firebase-config.js</code> ' +
-    'avec la config de ton projet (voir le <strong>README</strong>).';
-  return div;
-}
-
 export async function renderHeader(active) {
   const nav = document.getElementById('nav');
-  if (!isConfigured()) {
-    const main = document.querySelector('main') || document.body;
-    main.prepend(configBanner());
-  }
   const { user } = await getSessionOnce();
 
   const links = [
@@ -52,13 +36,16 @@ export async function renderHeader(active) {
     frag.appendChild(mk('/inscription.html', 'Créer un compte', '', 'btn small'));
   }
   if (nav) { nav.innerHTML = ''; nav.appendChild(frag); }
-  return { user, configured: isConfigured() };
+  // `configured` reste exposé pour compat : certaines pages (annonces, profil)
+  // conditionnent leur chargement dessus. Avec Clerk, le service est toujours prêt.
+  return { user, configured: true };
 }
 
-// Redirige vers la connexion si non authentifié. Renvoie la session.
+// Redirige vers la connexion si non authentifié, ou vers l'onboarding si le
+// compte Mercato n'est pas encore finalisé (rôle non choisi). Renvoie la session.
 export async function requireAuth() {
-  const { configured, user } = await getSessionOnce();
-  if (!configured) return { user: null };
+  const { user } = await getSessionOnce();
   if (!user) { location.href = '/connexion.html'; return { user: null }; }
+  if (!user.accountType) { location.href = '/bienvenue.html'; return { user: null }; }
   return { user };
 }

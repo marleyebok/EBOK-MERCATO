@@ -1,20 +1,24 @@
 /**
- * Couche de données EBOK-MERCATO — désormais sur Neon (via les fonctions
- * serverless /api/*), en remplacement de Firebase.
+ * Couche de données EBOK-MERCATO — Neon (fonctions serverless /api/*) pour les
+ * données, et CLERK pour l'identité (compte unique de la galaxie).
  *
- * Les signatures exportées sont IDENTIQUES à l'ancienne version Firebase :
- * les pages (annonces, mon-profil, agent, messages…) n'ont pas à changer.
+ * Les signatures de données (profils, annonces, messagerie…) sont restées
+ * IDENTIQUES : les pages n'ont pas à changer. Seule l'authentification a bougé
+ * de l'auth maison vers Clerk (voir js/clerk.js).
  *
  * Modèle (voir api/_lib.js) :
- *   shared.users / mercato.accounts : identité + rôle (membre|club|agent)
+ *   Clerk                           : identité (e-mail, mot de passe, nom réel)
+ *   mercato.accounts                : rôle Mercato (membre|club|agent) + nom affiché
  *   mercato.profiles                : annonces (JSONB)
  *   mercato.conversations/messages  : messagerie (polling, pas de temps réel)
  */
+import { loadClerk, authHeader } from "./clerk.js";
 
 let _session = null; // { uid, email, displayName, accountType } | null
 
 async function api(path, { method = "GET", body, headers, raw } = {}) {
-  const opts = { method, credentials: "include", headers: headers || {} };
+  // Chaque appel porte le token de session Clerk (Authorization: Bearer …).
+  const opts = { method, headers: { ...(await authHeader()), ...(headers || {}) } };
   if (body !== undefined) {
     if (raw) {
       opts.body = body;
@@ -30,10 +34,6 @@ async function api(path, { method = "GET", body, headers, raw } = {}) {
 }
 
 const ERRORS = {
-  email_pris: "Cet e-mail est déjà utilisé.",
-  identifiants: "E-mail ou mot de passe incorrect.",
-  password_court: "Mot de passe trop court (6 caractères minimum).",
-  email: "Adresse e-mail invalide.",
   db_unavailable: "Service indisponible — base de données non configurée.",
   auth: "Vous devez être connecté.",
 };
@@ -41,34 +41,34 @@ function fail(data) {
   return new Error(ERRORS[data && data.error] || "Une erreur est survenue.");
 }
 
-// Compat : plus de Firebase à initialiser. Le service est prêt dès qu'il y a une base.
-export function initFirebase() { return true; }
 export function isConfigured() { return true; }
 export const uid = () => (_session ? _session.uid : null);
 
 // ---------------------------------------------------------------------------
-// Authentification
+// Authentification (identité via Clerk)
 // ---------------------------------------------------------------------------
-export async function register({ email, password, accountType, displayName }) {
-  const { ok, data } = await api("/api/auth", { method: "POST", body: { action: "register", email, password, accountType, displayName } });
-  if (!ok) throw fail(data);
-  _session = data.user;
-  return data.user;
-}
 
-export async function login({ email, password }) {
-  const { ok, data } = await api("/api/auth", { method: "POST", body: { action: "login", email, password } });
+/** Finalise le compte Mercato après l'inscription Clerk (rôle + nom affiché). */
+export async function onboard({ accountType, displayName }) {
+  const { ok, data } = await api("/api/auth", { method: "POST", body: { action: "onboard", accountType, displayName } });
   if (!ok) throw fail(data);
   _session = data.user;
   return data.user;
 }
 
 export async function logout() {
-  await api("/api/auth", { method: "POST", body: { action: "logout" } });
+  const clerk = await loadClerk();
+  await clerk.signOut();
   _session = null;
 }
 
+/**
+ * Session courante : null si non connecté à Clerk. Sinon on complète avec le
+ * rôle Mercato (accountType peut être null si l'onboarding n'est pas terminé).
+ */
 export async function getSessionOnce() {
+  const clerk = await loadClerk();
+  if (!clerk.user) { _session = null; return { configured: true, user: null }; }
   const { data } = await api("/api/auth");
   _session = data.user || null;
   return { configured: true, user: _session };
