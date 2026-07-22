@@ -1,20 +1,22 @@
 /**
- * Bibliothèque commune des fonctions serverless EBOK-MERCATO (Neon).
- * Remplace l'ancienne couche Firebase : connexion base, schéma, sessions.
+ * Bibliothèque commune des fonctions serverless EBOK-MERCATO (Neon + Clerk).
  *
- * Base PARTAGÉE de la galaxie (DATABASE_URL) :
- *   shared.users          : identité (uid, email, mot de passe haché, nom)
- *   mercato.accounts      : rôle propre à Mercato (membre | club | agent)
+ * Identité : gérée par CLERK (compte unique de la galaxie EBOK). Les fonctions
+ * ci-dessous ne vérifient plus un cookie maison — elles valident le token de
+ * session Clerk envoyé par le front (`Authorization: Bearer <token>`).
+ *
+ * Données (DATABASE_URL, base Neon partagée de la galaxie) :
+ *   mercato.accounts      : rôle propre à Mercato (membre | club | agent) + nom
+ *                           affiché, indexé par l'ID utilisateur Clerk.
  *   mercato.profiles      : annonces (JSONB `data` = tous les champs du profil)
  *   mercato.conversations : fils de discussion
  *   mercato.messages      : messages d'un fil
+ *
+ * « Zéro miroir » : aucune copie locale des identités. L'e-mail et le nom réel
+ * sont lus à la volée depuis Clerk (voir clerkUser).
  */
 import { neon } from "@neondatabase/serverless";
-import bcrypt from "bcryptjs";
-import { SignJWT, jwtVerify } from "jose";
-
-export const COOKIE = "ebok_session";
-const ONE_WEEK = 60 * 60 * 24 * 7;
+import { verifyToken, createClerkClient } from "@clerk/backend";
 
 export function hasDb() {
   return Boolean(process.env.DATABASE_URL);
@@ -30,21 +32,19 @@ let ready = false;
 export async function ensureSchema() {
   if (ready) return;
   const q = sql();
-  await q`CREATE SCHEMA IF NOT EXISTS shared`;
   await q`CREATE SCHEMA IF NOT EXISTS mercato`;
   await q`
-    CREATE TABLE IF NOT EXISTS shared.users (
+    CREATE TABLE IF NOT EXISTS mercato.accounts (
       uid TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT,
+      account_type TEXT NOT NULL,
       display_name TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
-  await q`
-    CREATE TABLE IF NOT EXISTS mercato.accounts (
-      uid TEXT PRIMARY KEY REFERENCES shared.users(uid) ON DELETE CASCADE,
-      account_type TEXT NOT NULL
-    )`;
+  // Compat : anciennes installations (auth maison Firebase/Neon). L'uid est
+  // désormais l'ID Clerk : on relâche le lien vers shared.users et on s'assure
+  // que la colonne display_name existe.
+  await q`ALTER TABLE mercato.accounts DROP CONSTRAINT IF EXISTS accounts_uid_fkey`;
+  await q`ALTER TABLE mercato.accounts ADD COLUMN IF NOT EXISTS display_name TEXT`;
   await q`
     CREATE TABLE IF NOT EXISTS mercato.profiles (
       id TEXT PRIMARY KEY,
@@ -80,66 +80,47 @@ export async function ensureSchema() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mots de passe & sessions                                            */
+/* Sessions & identité — CLERK                                         */
 /* ------------------------------------------------------------------ */
-export function hashPassword(pw) {
-  return bcrypt.hash(pw, 10);
-}
-export function checkPassword(pw, hash) {
-  return bcrypt.compare(pw, hash || "");
+let _clerk = null;
+function clerk() {
+  if (!_clerk) _clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+  return _clerk;
 }
 
-function secret() {
-  const s = process.env.SESSION_SECRET;
-  if (!s) throw new Error("SESSION_SECRET manquant");
-  return new TextEncoder().encode(s);
+/** Récupère le token de session : en-tête Bearer, sinon cookie __session. */
+function bearerToken(req) {
+  const auth = req.headers.authorization || req.headers.Authorization || "";
+  if (auth.startsWith("Bearer ")) return auth.slice(7).trim();
+  const raw = req.headers.cookie || "";
+  const m = raw.split(";").map((c) => c.trim()).find((c) => c.startsWith("__session="));
+  return m ? decodeURIComponent(m.slice("__session=".length)) : null;
 }
-export async function signSession(uid) {
-  return new SignJWT({ uid })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${ONE_WEEK}s`)
-    .sign(secret());
-}
-export async function verifySession(token) {
+
+/** Valide le token Clerk et renvoie l'ID utilisateur (le `sub`), ou null. */
+export async function sessionUid(req) {
+  const token = bearerToken(req);
+  if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret());
-    return typeof payload.uid === "string" ? payload.uid : null;
+    const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+    return typeof payload.sub === "string" ? payload.sub : null;
   } catch {
     return null;
   }
 }
 
-/** Lit le cookie de session et renvoie l'uid connecté (ou null). */
-export async function sessionUid(req) {
-  const raw = req.headers.cookie || "";
-  const m = raw.split(";").map((c) => c.trim()).find((c) => c.startsWith(COOKIE + "="));
-  if (!m) return null;
-  return verifySession(decodeURIComponent(m.slice(COOKIE.length + 1)));
-}
-
-/** Pose le cookie de session, partagé sur *.ebok.fr en production. */
-export function setSessionCookie(req, res, token) {
-  const host = String(req.headers.host || "");
-  const onEbok = host.endsWith("ebok.fr");
-  const parts = [
-    `${COOKIE}=${encodeURIComponent(token)}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    `Max-Age=${ONE_WEEK}`,
-  ];
-  if (onEbok) {
-    parts.push("Domain=.ebok.fr");
-    parts.push("Secure");
+/** Infos d'identité lues à la volée depuis Clerk (zéro miroir). */
+export async function clerkUser(uid) {
+  try {
+    const u = await clerk().users.getUser(uid);
+    const emails = u.emailAddresses || [];
+    const primary = emails.find((e) => e.id === u.primaryEmailAddressId) || emails[0];
+    const email = primary?.emailAddress || "";
+    const name = [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "";
+    return { email, name };
+  } catch {
+    return { email: "", name: "" };
   }
-  res.setHeader("Set-Cookie", parts.join("; "));
-}
-export function clearSessionCookie(req, res) {
-  const host = String(req.headers.host || "");
-  const parts = [`${COOKIE}=`, "Path=/", "HttpOnly", "Max-Age=0"];
-  if (host.endsWith("ebok.fr")) parts.push("Domain=.ebok.fr");
-  res.setHeader("Set-Cookie", parts.join("; "));
 }
 
 /* ------------------------------------------------------------------ */
