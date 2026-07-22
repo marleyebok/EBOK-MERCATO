@@ -130,7 +130,9 @@ export async function uploadFile(file, folder = "divers") {
     body: file,
     headers: {
       "Content-Type": file.type || "application/octet-stream",
-      "x-filename": file.name || "fichier",
+      // Les en-têtes HTTP n'acceptent que l'ISO-8859-1 : on encode le nom
+      // (accents, espaces, emoji…) pour éviter que fetch ne rejette la requête.
+      "x-filename": encodeURIComponent(file.name || "fichier"),
       "x-folder": folder,
     },
   });

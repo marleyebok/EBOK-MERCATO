@@ -30,7 +30,10 @@ export default async function handler(req, res) {
     if (!buf.length) return json(res, 400, { error: "vide" });
 
     const folder = String(req.headers["x-folder"] || "divers").replace(/[^a-z0-9_-]/gi, "");
-    const name = String(req.headers["x-filename"] || "fichier").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+    // Le nom arrive encodé (encodeURIComponent) pour survivre à l'en-tête HTTP.
+    let rawName = String(req.headers["x-filename"] || "fichier");
+    try { rawName = decodeURIComponent(rawName); } catch { /* nom déjà brut */ }
+    const name = rawName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
     const { url } = await put(`mercato/${uid}/${folder}/${Date.now()}_${name}`, buf, {
       access: "public",
       addRandomSuffix: true,
