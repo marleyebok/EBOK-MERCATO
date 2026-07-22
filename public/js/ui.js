@@ -36,7 +36,9 @@ export async function renderHeader(active) {
     frag.appendChild(mk('/inscription.html', 'Créer un compte', '', 'btn small'));
   }
   if (nav) { nav.innerHTML = ''; nav.appendChild(frag); }
-  return { user };
+  // `configured` reste exposé pour compat : certaines pages (annonces, profil)
+  // conditionnent leur chargement dessus. Avec Clerk, le service est toujours prêt.
+  return { user, configured: true };
 }
 
 // Redirige vers la connexion si non authentifié, ou vers l'onboarding si le
