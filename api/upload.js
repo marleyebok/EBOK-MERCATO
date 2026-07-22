@@ -41,9 +41,9 @@ export default async function handler(req, res) {
     });
     return json(res, 200, { url });
   } catch (e) {
+    // Le détail reste dans les logs serveur (diagnostic) ; le front ne reçoit
+    // qu'un code générique pour ne pas exposer d'erreur technique au visiteur.
     console.error("upload:", e);
-    // `detail` : message brut de l'erreur, remonté au front pour diagnostiquer
-    // un problème de configuration du stockage (token invalide, accès refusé…).
-    return json(res, 500, { error: "server", detail: String((e && e.message) || e) });
+    return json(res, 500, { error: "server" });
   }
 }
