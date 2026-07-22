@@ -8,8 +8,8 @@
  * Passage en production : remplacer PUBLISHABLE_KEY par la clé `pk_live_...` et
  * FRONTEND_API par `clerk.ebok.fr` (le reste du code ne change pas).
  */
-const PUBLISHABLE_KEY = "pk_test_YWNjdXJhdGUtbWFybW9zZXQtODguY2xlcmsuYWNjb3VudHMuZGV2JA";
-const FRONTEND_API = "accurate-marmoset-88.clerk.accounts.dev"; // décodé de la clé
+const PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZWJvay5mciQ";
+const FRONTEND_API = "clerk.ebok.fr"; // instance de production (décodé de la clé)
 
 let _loaded = null;
 
