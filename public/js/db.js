@@ -41,6 +41,7 @@ const ERRORS = {
   vide: "Fichier vide.",
 };
 function fail(data) {
+  if (data && data.detail) return new Error(String(data.detail));
   return new Error(ERRORS[data && data.error] || "Une erreur est survenue.");
 }
 

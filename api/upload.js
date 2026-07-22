@@ -42,6 +42,8 @@ export default async function handler(req, res) {
     return json(res, 200, { url });
   } catch (e) {
     console.error("upload:", e);
-    return json(res, 500, { error: "server" });
+    // `detail` : message brut de l'erreur, remonté au front pour diagnostiquer
+    // un problème de configuration du stockage (token invalide, accès refusé…).
+    return json(res, 500, { error: "server", detail: String((e && e.message) || e) });
   }
 }
