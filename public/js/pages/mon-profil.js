@@ -85,7 +85,7 @@ if (profile) {
   if (profile.id) viewLinkTo(profile.id);
 }
 
-// Upload photo (Firebase Storage)
+// Upload photo (Vercel Blob, via /api/upload)
 document.getElementById('photoFile').addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
   const status = document.getElementById('photoStatus');

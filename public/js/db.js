@@ -36,6 +36,9 @@ async function api(path, { method = "GET", body, headers, raw } = {}) {
 const ERRORS = {
   db_unavailable: "Service indisponible — base de données non configurée.",
   auth: "Vous devez être connecté.",
+  stockage_indisponible: "Stockage non configuré — impossible d'envoyer le fichier pour le moment.",
+  trop_lourd: "Fichier trop lourd (8 Mo maximum).",
+  vide: "Fichier vide.",
 };
 function fail(data) {
   return new Error(ERRORS[data && data.error] || "Une erreur est survenue.");
