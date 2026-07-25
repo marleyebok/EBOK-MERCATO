@@ -253,8 +253,11 @@ footer.site { border-top: 1px solid var(--line); color: var(--muted); font-size:
    ========================================================= */
 
 /* L'attribut `hidden` doit masquer même un élément à `display` explicite
-   (`.dash` est en flex) : sinon `el.hidden = true` en JS ne masque rien. */
-[hidden] { display: none !important; }
+   (`.dash` est en flex) : sinon `el.hidden = true` en JS ne masque rien.
+   Volontairement limité à la coquille du compte : une règle `[hidden]`
+   globale s'appliquerait aussi au reste du site déjà en place. */
+.dash[hidden],
+.dash-gate[hidden] { display: none !important; }
 
 /* Palette locale. Déclarée AUSSI sur `.dash-gate` : le portail de connexion
    vit en dehors de `.dash`, et sans ces variables son bouton principal se
