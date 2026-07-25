@@ -3,5 +3,10 @@
   "framework": null,
   "buildCommand": null,
   "installCommand": "npm install",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "redirects": [{ "source": "/compte", "destination": "/compte/profil", "permanent": false }],
+  "rewrites": [
+    { "source": "/compte/profil", "destination": "/compte/profil.html" },
+    { "source": "/compte/general", "destination": "/compte/general.html" }
+  ]
 }
