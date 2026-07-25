@@ -25,7 +25,7 @@
     { id: 'academie', name: 'ACADÉMIE', color: '#8A4CE0', url: 'https://academie.ebok.fr/' },
     { id: 'scouting', name: 'SCOUTING', color: '#EA5A3C', url: 'https://scouting.ebok.fr/' },
     { id: 'blog',     name: 'BLOG',     color: '#C8317E', url: 'https://blog.ebok.fr/' },
-    { id: 'forum',    name: 'FORUM',    color: '#18A0C4', url: 'https://forum.ebok.fr/' },
+    { id: 'forum',    name: 'FORUM',    color: '#7C3AED', url: 'https://forum.ebok.fr/' },
     { id: 'medias',   name: 'MÉDIAS',   color: '#C9A227', url: 'https://medias.ebok.fr/' },
     { id: 'workout',  name: 'WORKOUT',  color: '#A3BD18', url: 'https://workout.ebok.fr/' }
   ];
